@@ -1,6 +1,8 @@
 package com.vinit.foldernaut.adapters;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -20,6 +22,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.text.DateFormat;
 import java.util.List;
+import java.util.Random;
 
 public class FileAdapter extends RecyclerView.Adapter<FileAdapter.MyViewHolder> {
 
@@ -29,6 +32,7 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.MyViewHolder> 
     private RecyclerViewClickListener myRecyclerViewClickListener;
     private RecyclerViewLongClickListener myRecyclerViewLongClickListener;
     private boolean is_in_action_mode = false;
+    private String[] colors = {"#1976D2", "#FF9800", "#388E3C", "#D32F2F", "#FFC107", "#FF5722"};
 
     public FileAdapter(List<FileObject> fileObjects, Context ctx, RecyclerViewClickListener myRecyclerViewClickListener,
                        RecyclerViewLongClickListener myRecyclerViewLongClickListener) {
@@ -52,6 +56,9 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.MyViewHolder> 
         String attrib = fo.isDirectory() ? Integer.toString(fo.getChildCount()):
                 FileUtils.byteCountToDisplaySize(new File(fo.getFilepath()).length());
         holder.itemFolderDescription.setText(DateFormat.getDateTimeInstance().format(fo.getDateCreated())+ " | " + attrib);
+
+        //holder.itemIcon.setColorFilter(Color.parseColor(colors[new Random().nextInt(colors.length)]), PorterDuff.Mode.SRC_IN);
+
         Glide.with(ctx)
                 .load(Uri.fromFile( new File( fo.getFilepath() ) ))
                 .placeholder(fo.getImageResource())
