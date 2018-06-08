@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_explore"
+            android:icon="@drawable/ic_folder_black_24dp"
+            android:title="Explore" />
+        <item
+            android:id="@+id/nav_favorite"
+            android:icon="@drawable/ic_favorite_black_24dp"
+            android:title="Favorites" />
+        <item
+            android:id="@+id/nav_document"
+            android:icon="@drawable/ic_insert_drive_file_black_24dp"
+            android:title="Documents" />
+        <item
+            android:id="@+id/nav_downloads"
+            android:icon="@drawable/ic_file_download_black_24dp"
+            android:title="Downloads" />
+        <item
+            android:id="@+id/nav_pictures"
+            android:icon="@drawable/ic_insert_photo_black_24dp"
+            android:title="Pictures" />
+        <item
+            android:id="@+id/nav_movies"
+            android:icon="@drawable/ic_movie_black_24dp"
+            android:title="Movies" />
+        <item
+            android:id="@+id/nav_music"
+            android:icon="@drawable/ic_library_music_black_24dp"
+            android:title="Music" />
+        <item
+            android:id="@+id/nav_books"
+            android:icon="@drawable/ic_book_black_24dp"
+            android:title="Books" />
+        <item
+            android:id="@+id/nav_cloud"
+            android:icon="@drawable/ic_cloud_black_24dp"
+            android:title="Cloud" />
+        <item
+            android:id="@+id/nav_remote"
+            android:icon="@drawable/ic_laptop_chromebook_black_24dp"
+            android:title="Desktop access" />
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings_black_24dp"
+            android:title="Settings" />
+    </group>
+
+    <item android:title="Other">
+        <menu>
+            <item
+                android:id="@+id/nav_theme"
+                android:icon="@drawable/ic_brush_black_24dp"
+                android:title="Theme" />
+        </menu>
+    </item>
+
+</menu>
