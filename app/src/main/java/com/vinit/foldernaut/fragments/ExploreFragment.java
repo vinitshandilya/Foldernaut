@@ -5,6 +5,8 @@ import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Animatable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -57,6 +59,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     private List<FileObject> fileObjectList = new ArrayList<>();
     private List<FileObject> selectedFiles = new ArrayList<>();
     private List<FileObject> tobeDeletedFiles = new ArrayList<>();
+    private Menu menu;
     FileAdapter fileAdapter;
     String parentDir;
     TextView pathAtTop;
@@ -113,6 +116,11 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                 @Override
                 public void onClick(View view) {
                     String message;
+
+                    Drawable drawable = fab.getDrawable();
+                    if (drawable instanceof Animatable) {
+                        ((Animatable) drawable).start();
+                    }
 
                     if(!(new File(currentWorkingDirectory+"New Folder")).exists()) {
                        if((new File(currentWorkingDirectory+"New Folder")).mkdir()) {
@@ -236,6 +244,15 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         cabMenuEnabled = true;
         fileAdapter.setActionMode(true); // Show checkboxes and context menu
 
+        if (menu != null) {
+            for (int i = 0; i < menu.size(); i++) {
+                Drawable drawable = menu.getItem(i).getIcon();
+                if (drawable instanceof Animatable) {
+                    ((Animatable) drawable).start();
+                }
+            }
+        }
+
         for(FileObject file: fileObjectList)
             file.setSelected(false); // Unmark all previously selected files
         selectedFiles.clear(); // Clear selected files list
@@ -309,12 +326,20 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             m.setOptionalIconsVisible(true);
         }
 
+        this.menu = menu;
+
         super.onCreateOptionsMenu(menu, inflater);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         (new ClickSound(getActivity().getApplicationContext(), R.raw.buttonglassmp3)).play();
+
+        Drawable drawable = item.getIcon();
+        if (drawable instanceof Animatable) {
+            ((Animatable) drawable).start();
+        }
+
         int id = item.getItemId();
 
         String message = "";
