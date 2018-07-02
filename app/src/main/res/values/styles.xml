@@ -33,9 +33,9 @@
 
     <style name="BigTextStyle">
         <item name="android:textSize">17sp</item>
-        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textColor">#37474f</item>
         <item name="android:typeface">sans</item>
-        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:fontFamily">sans-serif</item>
          <!-- <item name="android:textStyle">bold</item> -->
     </style>
 
@@ -51,6 +51,10 @@
         <item name="android:textColor">@android:color/white</item>
         <item name="android:typeface">sans</item>
         <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="Color1SwitchStyle">
+        <item name="colorControlActivated">@android:color/white</item>
     </style>
 
 </resources>

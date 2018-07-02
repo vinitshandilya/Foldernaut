@@ -19,6 +19,7 @@ import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,6 +27,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -62,17 +64,20 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     private Menu menu;
     FileAdapter fileAdapter;
     String parentDir;
-    TextView pathAtTop;
+    TextView pathAtTop, emptyIndicator;
     String currentWorkingDirectory = Environment.getExternalStorageDirectory().toString(); // Default to SD root
     android.support.v7.widget.Toolbar toolbar;
     boolean cabMenuEnabled = false;
     boolean cabMenuRequired = false;
-    boolean cut = false;
     RecyclerView explorerRv;
     private List<Integer> scrollPos = new ArrayList<Integer>();
     ViewGroup vg = null;
     YesNoDialog yesNoDialog;
     UserInputDialog userInputDialog;
+
+    SwitchCompat switchAB;
+    boolean currentvisibilitystate=true;
+    ArrayList<Integer> tohighlight = new ArrayList<>();
 
     public ExploreFragment() {}
 
@@ -85,12 +90,13 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         setHasOptionsMenu(true); // Otherwise, the new menu won't be inflated
         //((AppCompatActivity) getActivity()).getSupportActionBar().setTitle("");
         pathAtTop = (TextView)view.findViewById(R.id.explorertext);
+        emptyIndicator = (TextView)view.findViewById(R.id.emptyIndicatorText);
         explorerRv = (RecyclerView)view.findViewById(R.id.recycler_view_explorer);
         RecyclerView.LayoutManager lm = new GridLayoutManager(getActivity().getApplicationContext(),1);
-        listFiles(Environment.getExternalStorageDirectory().toString()+"/");
+        listFiles(Environment.getExternalStorageDirectory().toString()+"/", currentvisibilitystate);
         parentDir = ""; // will be used for navigating up in file tree
         fileAdapter = new FileAdapter(fileObjectList, getActivity().getApplicationContext(),
-                this, this);
+                this, this, tohighlight);
         explorerRv.setLayoutManager(lm);
         explorerRv.setHasFixedSize(true);
         explorerRv.setAdapter(fileAdapter);
@@ -127,10 +133,27 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                            message = "New folder created";
                            fileObjectList.clear();
                            toolbar.getMenu().clear();
+
                            toolbar.inflateMenu(R.menu.fragment_explore_menu);
+                           switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+                           switchAB.setChecked(currentvisibilitystate);
+
+                           switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                               @Override
+                               public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                                   currentvisibilitystate = !b;
+                                   fileObjectList.clear();
+                                   fileAdapter.setActionMode(false);
+                                   fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                                   listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                                   parentDir = (new File(currentWorkingDirectory)).getParent();
+                                   fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                               }
+                           });
+
                            fileAdapter.setActionMode(false);
                            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-                           listFiles(currentWorkingDirectory); // Build up the child directory
+                           listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
                            parentDir = (new File(currentWorkingDirectory)).getParent();
                            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
                        }
@@ -170,12 +193,44 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                         toolbar.inflateMenu(R.menu.toolbar_contextual_menu);
                     } else {
                         // Exit the context action mode
+                        tohighlight.clear();
                         toolbar.inflateMenu(R.menu.fragment_explore_menu);
+                        switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+                        switchAB.setChecked(currentvisibilitystate);
+
+                        switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                                currentvisibilitystate = b;
+                                fileObjectList.clear();
+                                fileAdapter.setActionMode(false);
+                                fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                                listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                                parentDir = (new File(currentWorkingDirectory)).getParent();
+                                fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                            }
+                        });
+
                         fileAdapter.setActionMode(false); // Remove checkboxes
                         fileAdapter.notifyDataSetChanged();
                     }
                 } else {
                     toolbar.inflateMenu(R.menu.fragment_explore_menu);
+                    switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+                    switchAB.setChecked(currentvisibilitystate);
+
+                    switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                            currentvisibilitystate = b;
+                            fileObjectList.clear();
+                            fileAdapter.setActionMode(false);
+                            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                            parentDir = (new File(currentWorkingDirectory)).getParent();
+                            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                        }
+                    });
                 }
 
                 String selectedRoot = fileObjectList.get(position).getFilepath();
@@ -183,7 +238,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                     fileObjectList.clear();
                     fileAdapter.setActionMode(false); // Open child directory with no checkboxes
                     fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-                    listFiles(selectedRoot+"/"); // Build up the child directory
+                    listFiles(selectedRoot+"/", currentvisibilitystate); // Build up the child directory
                     parentDir = (new File(selectedRoot+"/")).getParent();
                     fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
                 }
@@ -207,11 +262,17 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                     //Toast.makeText(getActivity().getApplicationContext(),"Checked at pos "+position, Toast.LENGTH_SHORT).show();
                     fileObjectList.get(position).setSelected(true); //mark the file as selected
                     selectedFiles.add(fileObjectList.get(position)); //Add to selected files list
+                    tohighlight.add(position);
                 }
                 else {
                     //Toast.makeText(getActivity().getApplicationContext(),"Un-Checked at pos "+position, Toast.LENGTH_SHORT).show();
                     fileObjectList.get(position).setSelected(false); //mark the file as Un-selected
                     selectedFiles.remove(fileObjectList.get(position));
+                    for(int i=0;i<tohighlight.size();i++) {
+                        if(tohighlight.get(i) == position) {
+                            tohighlight.remove(i);
+                        }
+                    }
                 }
 
                 fileAdapter.notifyDataSetChanged();
@@ -263,6 +324,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             Toast.makeText(getActivity().getApplicationContext(),"Checked at pos "+position, Toast.LENGTH_SHORT).show();
             fileObjectList.get(position).setSelected(true); //mark the file as selected
             selectedFiles.add(fileObjectList.get(position)); //Add to selected files list
+
+            tohighlight.add(position);
         }
         else {
             Toast.makeText(getActivity().getApplicationContext(),"Un-Checked at pos "+position, Toast.LENGTH_SHORT).show();
@@ -276,6 +339,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
     @Override
     public void onBackPressed() {
+        tohighlight.clear();
         try {
             ((GridLayoutManager) explorerRv.getLayoutManager()).scrollToPositionWithOffset(scrollPos.get(scrollPos.size()-1),0);
             scrollPos.remove(scrollPos.size()-1); //forget the scroll position
@@ -287,6 +351,21 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         }
         else {
             toolbar.inflateMenu(R.menu.fragment_explore_menu);
+            switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+            switchAB.setChecked(currentvisibilitystate);
+
+            switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    currentvisibilitystate = b;
+                    fileObjectList.clear();
+                    fileAdapter.setActionMode(false);
+                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                    parentDir = (new File(currentWorkingDirectory)).getParent();
+                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                }
+            });
         }
 
         if(fileAdapter.actionModeEnabled()) { // If in context menu mode, back press will exit this mode first
@@ -294,11 +373,11 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             fileAdapter.notifyDataSetChanged();
         } else {
             try {
-                if(listFiles(parentDir)!=0) {
+                if(listFiles(parentDir, currentvisibilitystate)!=0) {
                     fileObjectList.clear();
                     fileAdapter.setActionMode(false); // Clear checkboxes if displayed
                     fileAdapter.notifyDataSetChanged();
-                    listFiles(parentDir+"/");
+                    listFiles(parentDir+"/", currentvisibilitystate);
                     fileAdapter.notifyDataSetChanged();
                     parentDir = (new File(parentDir+"/")).getParent();
                 }
@@ -326,6 +405,24 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             m.setOptionalIconsVisible(true);
         }
 
+        switchAB = (SwitchCompat) menu.findItem(R.id.switchId)
+                .getActionView().findViewById(R.id.switchAB);
+
+        switchAB.setChecked(currentvisibilitystate);
+
+        switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                currentvisibilitystate = b;
+                fileObjectList.clear();
+                fileAdapter.setActionMode(false);
+                fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                parentDir = (new File(currentWorkingDirectory)).getParent();
+                fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+            }
+        });
+
         this.menu = menu;
 
         super.onCreateOptionsMenu(menu, inflater);
@@ -345,15 +442,31 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         String message = "";
 
         if (id == R.id.action_new_folder) {
+            tohighlight.clear();
             if(!(new File(currentWorkingDirectory+"New Folder")).exists()) {
                 if((new File(currentWorkingDirectory+"New Folder")).mkdir()) {
                     message = "New folder created";
                     fileObjectList.clear();
                     toolbar.getMenu().clear();
                     toolbar.inflateMenu(R.menu.fragment_explore_menu);
+                    switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+                    switchAB.setChecked(currentvisibilitystate);
+
+                    switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                            currentvisibilitystate = b;
+                            fileObjectList.clear();
+                            fileAdapter.setActionMode(false);
+                            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                            parentDir = (new File(currentWorkingDirectory)).getParent();
+                            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                        }
+                    });
                     fileAdapter.setActionMode(false);
                     fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-                    listFiles(currentWorkingDirectory); // Build up the child directory
+                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
                     parentDir = (new File(currentWorkingDirectory)).getParent();
                     fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
                 }
@@ -371,10 +484,14 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
         if (id == R.id.context_menu_select_all) {
             selectedFiles.clear();
+            tohighlight.clear();
             // Mark all files as selected
+            int i=0;
             for(FileObject file: fileObjectList) {
                 file.setSelected(true);
                 selectedFiles.add(file);
+                tohighlight.add(i);
+                i++;
             }
             fileAdapter.setActionMode(true); // Show checkboxes; should be all ticked because of file.setSelected(true);
             fileAdapter.notifyDataSetChanged();
@@ -412,7 +529,6 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                 args.putString("body_key", selectedFiles.get(0).getFilename());
                 userInputDialog.setArguments(args);
                 userInputDialog.show(getActivity().getSupportFragmentManager(), "userinput_dialog_tag");
-
             }
         }
         else if(id == R.id.context_menu_cut) {
@@ -424,6 +540,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             tobeDeletedFiles = selectedFiles;
             cabMenuEnabled = true;
             fileAdapter.setActionMode(false);
+            tohighlight.clear();
             fileAdapter.notifyDataSetChanged();
             return true;
         }
@@ -434,6 +551,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                     .setAction("Action", null).show();
             cabMenuEnabled = true;
             fileAdapter.setActionMode(false);
+            tohighlight.clear();
             fileAdapter.notifyDataSetChanged();
             return true;
         }
@@ -453,6 +571,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             return true;
         }
         else if(id == R.id.action_search) {
+            tohighlight.clear();
             final MenuItem myActionMenuItem = toolbar.getMenu().findItem(R.id.action_search);
             final SearchView searchView = (SearchView) myActionMenuItem.getActionView();
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -492,7 +611,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         return file.renameTo(new File(file.getParent()+"/"+newname));
     }
 
-    public int listFiles(String root) {
+    public int listFiles(String root, boolean SHOW_VISIBLE_ONLY) {
+
         File f = new File(root);
         //This is the onboard memory card of 32GB
         //Not the one plugged in from outside (2GB one)
@@ -501,39 +621,80 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         File[] files = f.listFiles();
         try {
             for (File inFile : files) {
-                String TAG = "Vinit";
-                if (inFile.isDirectory()) {
-                    //Log.d(TAG, inFile.getPath());
-                    fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(),
-                            R.drawable.ic_folder_black_24dp,
-                            true, inFile.list().length, false, new Date(inFile.lastModified())));
-                } else {
-                    //Log.d(TAG, inFile.getPath());
-                    Uri selectedUri = Uri.fromFile(inFile);
-                    String fileExtension
-                            = MimeTypeMap.getFileExtensionFromUrl(selectedUri.toString());
-                    String mimeType
-                            = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
-                    System.out.println("Mimetype: "+mimeType);
 
-                    int icon;
+                if(SHOW_VISIBLE_ONLY) {
+                    if(!inFile.isHidden()) { // Show only visible files
+                        String TAG = "Vinit";
+                        if (inFile.isDirectory()) {
+                            //Log.d(TAG, inFile.getPath());
+                            fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(),
+                                    R.drawable.ic_folder_black_24dp,
+                                    true, inFile.list().length, false, new Date(inFile.lastModified())));
+                        } else {
+                            //Log.d(TAG, inFile.getPath());
+                            Uri selectedUri = Uri.fromFile(inFile);
+                            String fileExtension
+                                    = MimeTypeMap.getFileExtensionFromUrl(selectedUri.toString());
+                            String mimeType
+                                    = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
+                            System.out.println("Mimetype: "+mimeType);
 
-                    try {
-                        if(mimeType.contains("pdf"))
-                            icon = R.drawable.ic_pdf_black_24dp;
-                        else if(mimeType.contains("audio"))
-                            icon = R.drawable.ic_library_music_black_24dp;
-                        else if(mimeType.contains("video"))
-                            icon = R.drawable.ic_movie_black_24dp;
-                        else
-                            icon = R.drawable.ic_insert_drive_file_black_24dp;
-                    } catch (Exception e) {
-                        icon = R.drawable.ic_insert_drive_file_black_24dp;
+                            int icon;
+
+                            try {
+                                if(mimeType.contains("pdf"))
+                                    icon = R.drawable.ic_pdf_black_24dp;
+                                else if(mimeType.contains("audio"))
+                                    icon = R.drawable.ic_library_music_black_24dp;
+                                else if(mimeType.contains("video"))
+                                    icon = R.drawable.ic_movie_black_24dp;
+                                else
+                                    icon = R.drawable.ic_insert_drive_file_black_24dp;
+                            } catch (Exception e) {
+                                icon = R.drawable.ic_insert_drive_file_black_24dp;
+                            }
+
+                            fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(), icon,
+                                    false, 0, false, new Date(inFile.lastModified())));
+                        }
                     }
-
-                    fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(), icon,
-                            false, 0, false, new Date(inFile.lastModified())));
                 }
+                else { //Show everything and not just visible files
+                    String TAG = "Vinit";
+                    if (inFile.isDirectory()) {
+                        //Log.d(TAG, inFile.getPath());
+                        fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(),
+                                R.drawable.ic_folder_black_24dp,
+                                true, inFile.list().length, false, new Date(inFile.lastModified())));
+                    } else {
+                        //Log.d(TAG, inFile.getPath());
+                        Uri selectedUri = Uri.fromFile(inFile);
+                        String fileExtension
+                                = MimeTypeMap.getFileExtensionFromUrl(selectedUri.toString());
+                        String mimeType
+                                = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
+                        System.out.println("Mimetype: "+mimeType);
+
+                        int icon;
+
+                        try {
+                            if(mimeType.contains("pdf"))
+                                icon = R.drawable.ic_pdf_black_24dp;
+                            else if(mimeType.contains("audio"))
+                                icon = R.drawable.ic_library_music_black_24dp;
+                            else if(mimeType.contains("video"))
+                                icon = R.drawable.ic_movie_black_24dp;
+                            else
+                                icon = R.drawable.ic_insert_drive_file_black_24dp;
+                        } catch (Exception e) {
+                            icon = R.drawable.ic_insert_drive_file_black_24dp;
+                        }
+
+                        fileObjectList.add(new FileObject(inFile.getName(), inFile.getPath(), icon,
+                                false, 0, false, new Date(inFile.lastModified())));
+                    }
+                }
+
             }
             Collections.sort(fileObjectList); //sort by filename
             try {
@@ -544,8 +705,19 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             } catch(Exception e) {
                 pathAtTop.setText(root);
             }
+
+            /*
+            if(files.length > 0)
+                emptyIndicator.setText("");
+            else
+                emptyIndicator.setText("(Empty)");
+             */
+
+
+
             return files.length;
         } catch (Exception e) {
+            //emptyIndicator.setText("(Empty)");
             return 0;
         }
 
@@ -555,15 +727,31 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     public void onInputYesClick() {
 
         System.out.println("Message received in parent : " + userInputDialog.getNewname());
+        tohighlight.clear();
         renameFileFolder(new File(selectedFiles.get(0).getFilepath()), userInputDialog.getNewname());
         userInputDialog.dismiss();
         //Reload the target folder
         fileObjectList.clear();
         toolbar.getMenu().clear();
         toolbar.inflateMenu(R.menu.fragment_explore_menu);
+        switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+        switchAB.setChecked(currentvisibilitystate);
+
+        switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                currentvisibilitystate = b;
+                fileObjectList.clear();
+                fileAdapter.setActionMode(false);
+                fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                parentDir = (new File(currentWorkingDirectory)).getParent();
+                fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+            }
+        });
         fileAdapter.setActionMode(false);
         fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-        listFiles(currentWorkingDirectory); // Build up the child directory
+        listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
         parentDir = (new File(currentWorkingDirectory)).getParent();
         fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
 
@@ -689,9 +877,24 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             fileObjectList.clear();
             toolbar.getMenu().clear();
             toolbar.inflateMenu(R.menu.fragment_explore_menu);
+            switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+            switchAB.setChecked(currentvisibilitystate);
+
+            switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    currentvisibilitystate = b;
+                    fileObjectList.clear();
+                    fileAdapter.setActionMode(false);
+                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                    parentDir = (new File(currentWorkingDirectory)).getParent();
+                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                }
+            });
             fileAdapter.setActionMode(false);
             fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-            listFiles(currentWorkingDirectory); // Build up the child directory
+            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
             parentDir = (new File(currentWorkingDirectory)).getParent();
             fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
             System.out.println(copiedFileSize + " bytes copied.");
@@ -806,6 +1009,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     public void onYesClick() {
 
         yesNoDialog.dismiss();
+        tohighlight.clear();
         System.out.println("Detete confirm dialog -> Yes clicked");
         if(fileAdapter.actionModeEnabled() && selectedFiles.size() > 0) {
             for(FileObject fo:selectedFiles) {
@@ -816,9 +1020,24 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         fileObjectList.clear();
         toolbar.getMenu().clear();
         toolbar.inflateMenu(R.menu.fragment_explore_menu);
+        switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+        switchAB.setChecked(currentvisibilitystate);
+
+        switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                currentvisibilitystate = b;
+                fileObjectList.clear();
+                fileAdapter.setActionMode(false);
+                fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                parentDir = (new File(currentWorkingDirectory)).getParent();
+                fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+            }
+        });
         fileAdapter.setActionMode(false);
         fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-        listFiles(currentWorkingDirectory); // Build up the child directory
+        listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
         parentDir = (new File(currentWorkingDirectory)).getParent();
         fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
     }

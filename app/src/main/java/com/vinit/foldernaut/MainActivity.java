@@ -5,8 +5,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -47,7 +45,7 @@ public class MainActivity extends AppCompatActivity
     private boolean storageReadAllowed = false;
 
     String[] titles = {"Explore", "Favorites", "Documents", "Downloads",
-    "Pictures", "Movies", "Music", "Books", "Cloud", "Desktop Access", "Settings"};
+            "Pictures", "Movies", "Music", "Books", "Cloud", "Desktop Access", "Settings"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +57,7 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         //drawer.openDrawer(Gravity.LEFT);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         if(drawer!=null)
             drawer.addDrawerListener(toggle);
         toggle.syncState();

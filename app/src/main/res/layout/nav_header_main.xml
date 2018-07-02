@@ -35,13 +35,13 @@
         android:layout_alignParentBottom="true"
         android:tint="@color/colorPrimaryDark"/>
 
-   <!-- <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#C8D0D7"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:paddingTop="10dp"/> -->
+    <!-- <View
+         android:layout_width="match_parent"
+         android:layout_height="1dp"
+         android:background="#C8D0D7"
+         android:layout_alignParentBottom="true"
+         android:layout_alignParentRight="true"
+         android:layout_alignParentEnd="true"
+         android:paddingTop="10dp"/> -->
 
 </RelativeLayout>

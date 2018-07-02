@@ -54,6 +54,14 @@
 
     </android.support.v7.widget.RecyclerView>
 
+    <TextView
+        android:id="@+id/emptyIndicatorText"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/pathCard"
+        android:gravity="center"
+        android:text=""/>
+
 
 
 

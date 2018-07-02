@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#009688</color>
-    <color name="colorPrimaryDark">#009688</color>
+    <color name="colorPrimary">#4885ed</color>
+    <color name="colorPrimaryDark">#4885ed</color>
     <!-- colorPrimaryDark here, is overridden by v21\styles.xml file. So change that as well-->
-    <color name="colorAccent">#009688</color>
+    <color name="colorAccent">#4885ed</color>
 </resources>
