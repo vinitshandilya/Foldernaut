@@ -59,6 +59,13 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.MyViewHolder> 
     @Override
     public void onBindViewHolder(MyViewHolder holder, final int position) {
         final FileObject fo = fileObjects.get(position);
+        File f = new File(fo.getFilepath());
+
+        if(f.isHidden())
+            holder.itemFolderName.setTextColor(Color.parseColor("#8037474f"));
+        else
+            holder.itemFolderName.setTextColor(Color.parseColor("#37474f"));
+
         holder.itemFolderName.setText(fo.getFilename());
         String attrib = fo.isDirectory() ? Integer.toString(fo.getChildCount()):
                 FileUtils.byteCountToDisplaySize(new File(fo.getFilepath()).length());

@@ -346,7 +346,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         } catch (Exception e) {}
 
         toolbar.getMenu().clear();
-        if(cabMenuEnabled && cabMenuRequired) {
+        if(cabMenuEnabled && cabMenuRequired && listFiles(parentDir, currentvisibilitystate)!=0) {
             toolbar.inflateMenu(R.menu.toolbar_contextual_menu);
         }
         else {
@@ -420,6 +420,10 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                 listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
                 parentDir = (new File(currentWorkingDirectory)).getParent();
                 fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+
+                String message = b?"Not showing hidden files":"Showing hidden files";
+                Snackbar.make(vg, message, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
             }
         });
 
