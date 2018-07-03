@@ -179,21 +179,62 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         //add scroll pos to stack
         scrollPos.add(((GridLayoutManager)explorerRv.getLayoutManager()).findFirstCompletelyVisibleItemPosition());
 
-        switch (v.getId()) {
-            case R.id.list_item_folder_icon:
+        if(fileAdapter.actionModeEnabled()) { //checkboxes are showing because a list item was long clicked previously
+            if(!fileObjectList.get(position).isSelected()) { //if the file is not previously selected
+                fileObjectList.get(position).setSelected(true); //mark the file as selected
+                selectedFiles.add(fileObjectList.get(position)); //Add to selected files list
+                tohighlight.add(position);
+            }
+            else {
+                fileObjectList.get(position).setSelected(false); //mark the file as Un-selected
+                selectedFiles.remove(fileObjectList.get(position));
+                for(int i=0;i<tohighlight.size();i++) {
+                    if(tohighlight.get(i) == position) {
+                        tohighlight.remove(i);
+                    }
+                }
+            }
 
-                break;
-            case R.id.list_item_folder_name:
+            fileAdapter.notifyDataSetChanged();
 
-                break;
-            case R.id.list_item_container:
-                toolbar.getMenu().clear();
-                if(cabMenuEnabled){
-                    if(cabMenuRequired) {
-                        toolbar.inflateMenu(R.menu.toolbar_contextual_menu);
+        }
+        else { // Normal click event
+            switch (v.getId()) {
+                case R.id.list_item_folder_icon:
+
+                    break;
+                case R.id.list_item_folder_name:
+
+                    break;
+                case R.id.list_item_container:
+                    toolbar.getMenu().clear();
+                    if(cabMenuEnabled){
+                        if(cabMenuRequired) {
+                            toolbar.inflateMenu(R.menu.toolbar_contextual_menu);
+                        } else {
+                            // Exit the context action mode
+                            tohighlight.clear();
+                            toolbar.inflateMenu(R.menu.fragment_explore_menu);
+                            switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+                            switchAB.setChecked(currentvisibilitystate);
+
+                            switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                                @Override
+                                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                                    currentvisibilitystate = b;
+                                    fileObjectList.clear();
+                                    fileAdapter.setActionMode(false);
+                                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                                    parentDir = (new File(currentWorkingDirectory)).getParent();
+                                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                                }
+                            });
+
+                            fileAdapter.setActionMode(false); // Remove checkboxes
+                            fileAdapter.notifyDataSetChanged();
+                        }
                     } else {
-                        // Exit the context action mode
-                        tohighlight.clear();
                         toolbar.inflateMenu(R.menu.fragment_explore_menu);
                         switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
                         switchAB.setChecked(currentvisibilitystate);
@@ -210,73 +251,55 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                                 fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
                             }
                         });
-
-                        fileAdapter.setActionMode(false); // Remove checkboxes
-                        fileAdapter.notifyDataSetChanged();
                     }
-                } else {
-                    toolbar.inflateMenu(R.menu.fragment_explore_menu);
-                    switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
-                    switchAB.setChecked(currentvisibilitystate);
 
-                    switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                        @Override
-                        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                            currentvisibilitystate = b;
-                            fileObjectList.clear();
-                            fileAdapter.setActionMode(false);
-                            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-                            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
-                            parentDir = (new File(currentWorkingDirectory)).getParent();
-                            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
-                        }
-                    });
-                }
-
-                String selectedRoot = fileObjectList.get(position).getFilepath();
-                if(fileObjectList.get(position).isDirectory()) {
-                    fileObjectList.clear();
-                    fileAdapter.setActionMode(false); // Open child directory with no checkboxes
-                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
-                    listFiles(selectedRoot+"/", currentvisibilitystate); // Build up the child directory
-                    parentDir = (new File(selectedRoot+"/")).getParent();
-                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
-                }
-                else {
-                    //IS NOT A DIRECTORY. HANDLE THE FILE
-                    MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                    Intent newIntent = new Intent(Intent.ACTION_VIEW);
-                    String mimeType = myMime.getMimeTypeFromExtension(fileExt(fileObjectList.get(position).getFilepath().substring(1)));
-                    newIntent.setDataAndType(Uri.fromFile(new File(fileObjectList.get(position).getFilepath())),mimeType);
-                    newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    try {
-                        getActivity().getApplicationContext().startActivity(newIntent);
-                    } catch (ActivityNotFoundException e) {
-                        Toast.makeText(getActivity().getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
+                    String selectedRoot = fileObjectList.get(position).getFilepath();
+                    if(fileObjectList.get(position).isDirectory()) {
+                        fileObjectList.clear();
+                        fileAdapter.setActionMode(false); // Open child directory with no checkboxes
+                        fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                        listFiles(selectedRoot+"/", currentvisibilitystate); // Build up the child directory
+                        parentDir = (new File(selectedRoot+"/")).getParent();
+                        fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
                     }
-                }
-                break;
-
-            case R.id.list_item_folder_checkBox:
-                if(!fileObjectList.get(position).isSelected()) { //if the file is not previously selected
-                    //Toast.makeText(getActivity().getApplicationContext(),"Checked at pos "+position, Toast.LENGTH_SHORT).show();
-                    fileObjectList.get(position).setSelected(true); //mark the file as selected
-                    selectedFiles.add(fileObjectList.get(position)); //Add to selected files list
-                    tohighlight.add(position);
-                }
-                else {
-                    //Toast.makeText(getActivity().getApplicationContext(),"Un-Checked at pos "+position, Toast.LENGTH_SHORT).show();
-                    fileObjectList.get(position).setSelected(false); //mark the file as Un-selected
-                    selectedFiles.remove(fileObjectList.get(position));
-                    for(int i=0;i<tohighlight.size();i++) {
-                        if(tohighlight.get(i) == position) {
-                            tohighlight.remove(i);
+                    else {
+                        //IS NOT A DIRECTORY. HANDLE THE FILE
+                        MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                        Intent newIntent = new Intent(Intent.ACTION_VIEW);
+                        String mimeType = myMime.getMimeTypeFromExtension(fileExt(fileObjectList.get(position).getFilepath().substring(1)));
+                        newIntent.setDataAndType(Uri.fromFile(new File(fileObjectList.get(position).getFilepath())),mimeType);
+                        newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        try {
+                            getActivity().getApplicationContext().startActivity(newIntent);
+                        } catch (ActivityNotFoundException e) {
+                            Toast.makeText(getActivity().getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
                         }
                     }
-                }
+                    break;
 
-                fileAdapter.notifyDataSetChanged();
+                case R.id.list_item_folder_checkBox:
+                    if(!fileObjectList.get(position).isSelected()) { //if the file is not previously selected
+                        //Toast.makeText(getActivity().getApplicationContext(),"Checked at pos "+position, Toast.LENGTH_SHORT).show();
+                        fileObjectList.get(position).setSelected(true); //mark the file as selected
+                        selectedFiles.add(fileObjectList.get(position)); //Add to selected files list
+                        tohighlight.add(position);
+                    }
+                    else {
+                        //Toast.makeText(getActivity().getApplicationContext(),"Un-Checked at pos "+position, Toast.LENGTH_SHORT).show();
+                        fileObjectList.get(position).setSelected(false); //mark the file as Un-selected
+                        selectedFiles.remove(fileObjectList.get(position));
+                        for(int i=0;i<tohighlight.size();i++) {
+                            if(tohighlight.get(i) == position) {
+                                tohighlight.remove(i);
+                            }
+                        }
+                    }
+
+                    fileAdapter.notifyDataSetChanged();
+            }
         }
+
+
     }
 
     private String fileExt(String url) {
@@ -871,7 +894,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         @Override
         protected void onPostExecute(Long copiedFileSize) {
 
-            if(tobeDeletedFiles.size() > 0) {
+            if(tobeDeletedFiles.size() > 0) { // File was moved, and not copied
                 for(FileObject fo:tobeDeletedFiles) {
                     System.out.println("File to delete: "+fo.getFilepath());
                     recursiveDelete(new File(fo.getFilepath()));
