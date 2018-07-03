@@ -302,6 +302,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     public void recyclerViewListLongClicked(View v, int position) {
         toolbar.getMenu().clear();
         toolbar.inflateMenu(R.menu.toolbar_contextual_menu);
+        tohighlight.clear();
         cabMenuEnabled = true;
         fileAdapter.setActionMode(true); // Show checkboxes and context menu
 
@@ -1002,7 +1003,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                 searchView.setIconified(true);
             }
             myActionMenuItem.collapseActionView();
-            RecyclerView.LayoutManager lm = new GridLayoutManager(getActivity().getApplicationContext(),2);
+            RecyclerView.LayoutManager lm = new GridLayoutManager(getActivity().getApplicationContext(),1);
             explorerRv.setLayoutManager(lm);
             explorerRv.setAdapter(fileAdapter);
             fileAdapter.notifyDataSetChanged();
