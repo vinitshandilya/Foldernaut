@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        body {
+          background-color: #eceff1;
+          font-family: 'Roboto', sans-serif;
+          margin:0;
+        }
+
+        .navtext {
+          display: block;
+          color: #37474f;
+          text-align: center;
+          padding: 20px 25px;
+          text-decoration: none;
+        }
+
+        .navul {
+          list-style-type: none;
+          font-weight: bold;
+          font-size: 30px;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          background-color: #fff;
+        }
+
+        .navli {
+          float: left;
+        }
+
+        .split {
+          height: 100%;
+          position: fixed;
+          z-index: 0;
+          top: 15;
+          overflow-x: hidden;
+          padding-top: 20px;
+        }
+
+        .left {
+          left: 0;
+          width: 25%;
+          background-color: #78909c;
+          padding: 10px;
+        }
+
+        .right {
+          right: 0;
+          width: 75%;
+          color: #fff;
+          background-color: #90a4ae;
+          padding: 10px;
+        }
+
+        .footer {
+          position: fixed;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          background-color: white;
+          color: #37474f;
+          text-align: center;
+        }
+
+        .sidebarul {
+          list-style-type: none;
+          margin: 0;
+          padding: 0;
+          width: 200px;
+        }
+
+        .sidebarli a {
+          display: block;
+          color: #fff;
+          padding: 8px 16px;
+          text-decoration: none;
+        }
+        .fileul {
+          list-style-type: none;
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        .fileli a {
+          display: block;
+          color: white;
+          padding: 8px 16px;
+          text-decoration: none;
+          font-size: 15px;
+        }
+        .toolbar {
+          width: 100%;
+          height: 45px;
+          background-color: #90a4ae;
+          border-radius: 5px;
+        }
+        .toolbarul {
+          list-style-type: none;
+          width: 100%;
+          height: inherit;
+          border-radius: 5px;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          background-color: #90a4ae;
+        }
+        .toolbarli-left {
+          float: left;
+        }
+        .toolbarli-right {
+          float: right;
+        }
+        .toolbarli-left a {
+          display: block;
+          color: white;
+          text-align: center;
+          padding: 10px 16px;
+          text-decoration: none;
+        }
+        .toolbarli-right a {
+          display: block;
+          color: white;
+          text-align: center;
+          padding: 10px 16px;
+          text-decoration: none;
+        }
+        .filetree {
+          padding: inherit;
+        }
+        #filepathdiv {
+          padding: inherit;
+          font-size: 13px;
+          color: white;
+        }
+
+  </style>
+  </head>
+
+
+  <body>
+
+    <ul class="navul"><li class="navli"><a class="navtext" href="/">Foldernaut</a></li></ul>
+
+    <div class="split left">
+      <ul class="sidebarul">
+        <li class="sidebarli"><a href="javascript:listFiles('sdcard')">Home</a></li>
+        <li class="sidebarli"><a href="#about">Apps</a></li>
+        <li class="sidebarli"><a href="#about">Photos</a></li>
+        <li class="sidebarli"><a href="#news">Documents</a></li>
+        <li class="sidebarli"><a href="#contact">Music</a></li>
+        <li class="sidebarli"><a href="#about">Videos</a></li>
+        <li class="sidebarli"><a href="#about">Favourites</a></li>
+        <li class="sidebarli"><a href="#about">Messages</a></li>
+        <li class="sidebarli"><a href="#about">Calls</a></li>
+        <li class="sidebarli"><a href="#about">Phone Information</a></li>
+      </ul>
+    </div>
+
+    <div class="split right">
+      <div class="toolbar">
+        <ul class="toolbarul">
+
+          <li class="toolbarli-left"><div id="gobackicon"></div></li>
+          <li class="toolbarli-left"><a href="javascript:listFiles('sdcard')"><i class="material-icons">home</i></a></li>
+          <li class="toolbarli-left"><a href="#home"><i class="material-icons">cloud</i></a></li>
+          <li class="toolbarli-left"><a href="#home"><i class="material-icons">favorite</i></a></li>
+          <li class="toolbarli-left"><a href="#news"><i class="material-icons">delete</i></a></li>
+          <li class="toolbarli-left"><a href="#news"><i class="material-icons">back</i></a></li>
+
+          <li class="toolbarli-right"><a href="#home"><i class="material-icons">view_module</i></a></li>
+          <li class="toolbarli-right"><a href="#home"><i class="material-icons">settings</i></a></li>
+
+        </ul>
+      </div>
+      <div class="filetree">
+        <div id="filepathdiv"></div>
+        <br>
+        <div id="filelist"></div>
+        <br>
+        <div id="form_container">
+        </div>
+      </div>
+    </div>
+
+
+    <div class="footer">
+      <p>Copyright &copy; 2018 Foldernaut, Inc.</p>
+    </div>
+
+    <script>
+      function listFiles(pathtoload) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            var rawfileTreeString = this.responseText;
+            console.log(rawfileTreeString);
+            var obj = JSON.parse(rawfileTreeString);
+            var arr = obj.filenames.split("*");
+            var paths = obj.filepaths.split("*");
+            var types = obj.filetypes.split("*");
+            console.log(JSON.stringify(obj));
+            var list= "<ul class=\"fileul\">"
+            for(var i=0; i<arr.length; i++) {
+
+              if(types[i] == 'd') {
+                list = list + "<li class=\"fileli\"><a href=\"javascript:listFiles('" + paths[i] + "')\">" + arr[i] + "</a> </li>";
+              }
+              else if(types[i] == 'f') {
+                list = list + "<li class=\"fileli\"><a href=\"" + paths[i] + "\" download>" + arr[i] + "</a> </li>";
+              }
+
+            }
+            list = list + "</ul>";
+            console.log(list);
+            document.getElementById("filelist").innerHTML = list;
+
+            document.getElementById("form_container").innerHTML = "<form ref='uploadForm'"+
+              "id='uploadForm'" +
+              "action='upload'" +
+              "method='post'" +
+              "encType='multipart/form-data'>" +
+                "<input type='file' name='filearray' multiple /><br> " +
+                "<input type='hidden' name='servpath' value='" + pathtoload + "'><br> " +
+                "<input type='submit' value='Upload!' /></form> ";
+
+            var str = pathtoload;
+            var n = str.lastIndexOf("/");
+            var parent_path = str.substring(0, n);
+            document.getElementById("gobackicon").innerHTML = "<a href=\"javascript:listFiles('" + parent_path + "')\">" + "<i class=\"material-icons\">arrow_back</i>" + "</a>";
+            document.getElementById("filepathdiv").innerHTML = pathtoload;
+          }
+        };
+
+        xhttp.open("GET", "?root="+pathtoload, true);
+        xhttp.send();
+      }
+
+
+      window.onload = function() {
+        var currentaddr = document.location.href;
+        // http://localhost:8000/?redir=hello%20world
+        if(currentaddr.indexOf('redir=') != -1) {
+          var arr = currentaddr.split('redir=');
+          listFiles(arr[1]);
+
+        } else {
+          listFiles('sdcard');
+        }
+
+      };
+
+</script>
+
+
+
+  </body>
+</html>

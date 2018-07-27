@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -47,13 +48,21 @@ import com.vinit.foldernaut.objects.YesNoDialogClickListener;
 
 import org.apache.commons.io.FileUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class ExploreFragment extends Fragment implements RecyclerViewClickListener, RecyclerViewLongClickListener,
         OnBackPressedListener, YesNoDialogClickListener, UserInputDialogClickListener {
@@ -265,15 +274,27 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                     else {
                         //IS NOT A DIRECTORY. HANDLE THE FILE
                         MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                        Intent newIntent = new Intent(Intent.ACTION_VIEW);
-                        String mimeType = myMime.getMimeTypeFromExtension(fileExt(fileObjectList.get(position).getFilepath().substring(1)));
-                        newIntent.setDataAndType(Uri.fromFile(new File(fileObjectList.get(position).getFilepath())),mimeType);
-                        newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        try {
-                            getActivity().getApplicationContext().startActivity(newIntent);
-                        } catch (ActivityNotFoundException e) {
-                            Toast.makeText(getActivity().getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
+
+                        Uri selectedUri = Uri.fromFile(new File(fileObjectList.get(position).getFilepath()));
+                        String fileExtension = MimeTypeMap.getFileExtensionFromUrl(selectedUri.toString());
+                        String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
+
+                        if(mime.contains("zip")) {
+                            UnzipFiles unzipTask = new UnzipFiles();
+                            unzipTask.execute(fileObjectList.get(position).getFilepath());
                         }
+                        else {
+                            Intent newIntent = new Intent(Intent.ACTION_VIEW);
+                            String mimeType = myMime.getMimeTypeFromExtension(fileExt(fileObjectList.get(position).getFilepath().substring(1)));
+                            newIntent.setDataAndType(Uri.fromFile(new File(fileObjectList.get(position).getFilepath())),mimeType);
+                            newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            try {
+                                getActivity().getApplicationContext().startActivity(newIntent);
+                            } catch (ActivityNotFoundException e) {
+                                Toast.makeText(getActivity().getApplicationContext(), "No application for this type of file.", Toast.LENGTH_LONG).show();
+                            }
+                        }
+
                     }
                     break;
 
@@ -618,6 +639,32 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         }
         else if(id == R.id.action_close_app) {
             getActivity().finish();
+        }
+
+        else if(id == R.id.context_menu_share) {
+            if(cabMenuEnabled && selectedFiles.size()!=0) {
+
+                // building selected files' uri array
+                ArrayList<Parcelable> fileUris = new ArrayList<>();
+                for(FileObject f : selectedFiles) {
+                    fileUris.add(Uri.parse("file://" + f.getFilepath()));
+                    System.out.println("URI: " + "file://" + f.getFilepath());
+                }
+
+                Intent intentShareFile = new Intent(Intent.ACTION_SEND_MULTIPLE);
+                intentShareFile.setType("text/*");
+                intentShareFile.putParcelableArrayListExtra(Intent.EXTRA_STREAM, fileUris);
+                getActivity().getApplicationContext().startActivity(intentShareFile);
+
+
+            }
+        }
+
+        else if(id == R.id.context_menu_zip) {
+            if(cabMenuEnabled && selectedFiles.size()!=0) {
+                ZipFiles zipTask = new ZipFiles();
+                zipTask.execute();
+            }
         }
 
 
@@ -1074,6 +1121,212 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     public void onNoClick() {
 
         yesNoDialog.dismiss();
+
+    }
+
+    private class ZipFiles extends AsyncTask<Void, Double, Long> {
+
+        ProgressDialog progressDialog;
+        String zipFilename = selectedFiles.get(0).getFilename() + "_" + System.currentTimeMillis() + ".zip";
+
+        @Override
+        protected void onPreExecute() {
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMax(100);
+            progressDialog.setMessage("Adding files to archive. Please wait.");
+            progressDialog.setTitle("Archiving");
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.show();
+        }
+
+        @Override
+        protected Long doInBackground(Void... voids) {
+
+            try {
+                BufferedInputStream origin = null;
+                FileOutputStream dest = new FileOutputStream(currentWorkingDirectory + zipFilename);
+                ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
+                byte data[] = new byte[1024];
+
+                for(FileObject f : selectedFiles) {
+                    FileInputStream fi = new FileInputStream(new File(f.getFilepath()));
+                    origin = new BufferedInputStream(fi, 1024);
+                    ZipEntry entry = new ZipEntry(f.getFilename());
+                    out.putNextEntry(entry);
+
+                    double progress = 0;
+                    long copied = 0;
+                    long filesize = (new File(f.getFilepath())).length();
+
+                    int count;
+                    while ((count = origin.read(data, 0, 1024)) != -1) {
+                        out.write(data, 0, count);
+                        copied = copied + 1024;
+                        progress = copied * 100 / filesize;
+                        publishProgress(progress);
+
+                    }
+                    origin.close();
+                }
+                out.close();
+
+                // Next Steps:
+                // Also handle if the Archive.zip already exists
+                // Also write code to un-archive the zip files
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Double... values) {
+            progressDialog.setProgress(values[0].intValue());
+        }
+
+        @Override
+        protected void onPostExecute(Long aLong) {
+            progressDialog.dismiss();
+            tohighlight.clear();
+            fileObjectList.clear();
+            toolbar.getMenu().clear();
+            toolbar.inflateMenu(R.menu.fragment_explore_menu);
+            switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+            switchAB.setChecked(currentvisibilitystate);
+
+            switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    currentvisibilitystate = b;
+                    fileObjectList.clear();
+                    fileAdapter.setActionMode(false);
+                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                    parentDir = (new File(currentWorkingDirectory)).getParent();
+                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                }
+            });
+
+            fileAdapter.setActionMode(false);
+            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+            parentDir = (new File(currentWorkingDirectory)).getParent();
+            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+
+            Snackbar.make(vg, zipFilename + " created", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+
+        }
+    }
+
+    private class UnzipFiles extends AsyncTask<String, Double, Long> {
+
+        ProgressDialog progressDialog;
+
+        @Override
+        protected void onPreExecute() {
+
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMax(100);
+            progressDialog.setMessage("Extracting files from archive. Please wait.");
+            progressDialog.setTitle("Unarchiving");
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.show();
+
+        }
+
+        @Override
+        protected Long doInBackground(String... strings) {
+
+            // Unzip code
+            try {
+                FileInputStream fin = new FileInputStream(new File(strings[0]));
+                ZipInputStream zin = new ZipInputStream(fin);
+                ZipEntry ze = null;
+
+                while ((ze = zin.getNextEntry()) != null) {
+                    System.out.println("Unzipping " + ze.getName());
+                    if(ze.isDirectory()) {
+                        File f = new File(currentWorkingDirectory + ze.getName());
+                        if(!f.isDirectory()) {
+                            f.mkdirs();
+                        }
+                    }
+                    else {
+                        FileOutputStream fout = new FileOutputStream(currentWorkingDirectory + ze.getName());
+                        BufferedOutputStream bufout = new BufferedOutputStream(fout);
+                        byte[] buffer = new byte[1024];
+
+                        int read = 0;
+                        long unzipped = 0;
+                        double progress = 0;
+                        long filesize = (new File(strings[0]).length());
+
+                        while ((read = zin.read(buffer)) != -1) {
+                            bufout.write(buffer, 0, read);
+                            unzipped = unzipped + 1024;
+                            progress = unzipped * 100 / filesize;
+                            publishProgress(progress);
+
+                        }
+
+                        bufout.close();
+                        zin.closeEntry();
+                        fout.close();
+                    }
+                }
+                zin.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Double... values) {
+            progressDialog.setProgress(values[0].intValue());
+        }
+
+        @Override
+        protected void onPostExecute(Long aLong) {
+
+            progressDialog.dismiss();
+            tohighlight.clear();
+            fileObjectList.clear();
+            toolbar.getMenu().clear();
+            toolbar.inflateMenu(R.menu.fragment_explore_menu);
+            switchAB = (SwitchCompat)toolbar.getMenu().findItem(R.id.switchId).getActionView().findViewById(R.id.switchAB);
+            switchAB.setChecked(currentvisibilitystate);
+
+            switchAB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    currentvisibilitystate = b;
+                    fileObjectList.clear();
+                    fileAdapter.setActionMode(false);
+                    fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+                    listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+                    parentDir = (new File(currentWorkingDirectory)).getParent();
+                    fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+                }
+            });
+
+            fileAdapter.setActionMode(false);
+            fileAdapter.notifyDataSetChanged(); // Clear the adapter first
+            listFiles(currentWorkingDirectory, currentvisibilitystate); // Build up the child directory
+            parentDir = (new File(currentWorkingDirectory)).getParent();
+            fileAdapter.notifyDataSetChanged(); // Populate recyclerview with child directory
+
+            Snackbar.make(vg, "Files extracted", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+
+        }
 
     }
 

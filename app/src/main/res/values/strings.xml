@@ -120,5 +120,6 @@
     <string name="context_menu_zip">Zip</string>
     <string name="exit_app">Exit</string>
     <string name="new_folder">New Folder</string>
+    <string name="context_menu_share">Share</string>
 
 </resources>

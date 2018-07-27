@@ -36,13 +36,19 @@
         android:title="@string/context_menu_rename"
         android:orderInCategory="6"
         app:showAsAction="never"
-        android:icon="@drawable/ic_edit_white_19dp"/>
+        android:icon="@drawable/ic_edit_black_19dp"/>
 
     <item android:id="@+id/context_menu_zip"
         android:title="@string/context_menu_zip"
         android:orderInCategory="7"
         app:showAsAction="never"
-        android:icon="@drawable/ic_archive_white_19dp"/>
+        android:icon="@drawable/ic_archive_black_19dp"/>
+
+    <item android:id="@+id/context_menu_share"
+        android:title="@string/context_menu_share"
+        android:orderInCategory="8"
+        app:showAsAction="never"
+        android:icon="@drawable/ic_share_black_19dp"/>
 
 
 
