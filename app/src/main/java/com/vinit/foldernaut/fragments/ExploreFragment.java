@@ -723,6 +723,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                                     icon = R.drawable.ic_library_music_black_24dp;
                                 else if(mimeType.contains("video"))
                                     icon = R.drawable.ic_movie_black_24dp;
+                                else if(mimeType.contains("zip"))
+                                    icon = R.drawable.ic_archive_black_19dp;
                                 else
                                     icon = R.drawable.ic_insert_drive_file_black_24dp;
                             } catch (Exception e) {
@@ -759,6 +761,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                                 icon = R.drawable.ic_library_music_black_24dp;
                             else if(mimeType.contains("video"))
                                 icon = R.drawable.ic_movie_black_24dp;
+                            else if(mimeType.contains("zip"))
+                                icon = R.drawable.ic_archive_black_19dp;
                             else
                                 icon = R.drawable.ic_insert_drive_file_black_24dp;
                         } catch (Exception e) {
@@ -1042,6 +1046,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                                 icon = R.drawable.ic_library_music_black_24dp;
                             else if(mimeType.contains("video"))
                                 icon = R.drawable.ic_movie_black_24dp;
+                            else if(mimeType.contains("zip"))
+                                icon = R.drawable.ic_archive_black_19dp;
                             else
                                 icon = R.drawable.ic_insert_drive_file_black_24dp;
                         } catch (Exception e) {
